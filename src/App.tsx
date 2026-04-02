@@ -1,6 +1,8 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { TaskBoard } from "./components/TaskBoard";
+import { subscribeWindowEdgeSnap } from "./lib/windowEdgeSnap";
 
 export default function App() {
   const [autoStart, setAutoStart] = useState(false);
@@ -13,6 +15,12 @@ export default function App() {
         setAutostartReady(true);
       })
       .catch(() => setAutostartReady(true));
+  }, []);
+
+  /** 拖拽停顿后：窗口靠近工作区边缘 30px 内则吸附对齐 */
+  useEffect(() => {
+    const win = getCurrentWindow();
+    return subscribeWindowEdgeSnap(win, { edgePx: 30, debounceMs: 150 });
   }, []);
 
   async function onAutostartChange(checked: boolean) {
@@ -67,20 +75,33 @@ export default function App() {
             任务清单
           </span>
         </div>
-        <label className="no-drag ui-text-secondary flex shrink-0 cursor-pointer items-center gap-2 text-[11px]">
-          <input
-            type="checkbox"
-            className="ui-checkbox-task size-3.5 rounded border"
-            style={{
-              borderColor: "var(--color-border)",
-              background: "var(--color-surface)",
-            }}
-            checked={autoStart}
-            disabled={!autostartReady}
-            onChange={(e) => void onAutostartChange(e.target.checked)}
-          />
-          开机自启
-        </label>
+        <div className="no-drag flex shrink-0 items-center gap-1.5">
+          <label className="ui-text-secondary flex cursor-pointer items-center gap-2 text-[11px]">
+            <input
+              type="checkbox"
+              className="ui-checkbox-task size-3.5 rounded border"
+              style={{
+                borderColor: "var(--color-border)",
+                background: "var(--color-surface)",
+              }}
+              checked={autoStart}
+              disabled={!autostartReady}
+              onChange={(e) => void onAutostartChange(e.target.checked)}
+            />
+            开机自启
+          </label>
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => void getCurrentWindow().close()}
+            className="flex size-7 items-center justify-center rounded-[var(--radius-button)] text-[15px] font-light leading-none transition hover:opacity-80"
+            style={{ color: "var(--color-text-tertiary)" }}
+            aria-label="关闭窗口"
+            title="关闭"
+          >
+            ×
+          </button>
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         <TaskBoard />
