@@ -11,6 +11,12 @@ export interface Task {
   tag: Tag;
   due: string | null;
   done: boolean;
+  /** 同优先级内排序，越小越靠前 */
+  order: number;
+  /** 创建日 YYYY-MM-DD */
+  createdDate: string | null;
+  /** 完成日 YYYY-MM-DD，未完成为 null */
+  completedDate: string | null;
 }
 
 export interface NewTask {
@@ -29,6 +35,16 @@ type TaskState = {
   updateTask: (task: Task) => Promise<Task>;
   deleteTask: (id: number) => Promise<boolean>;
   toggleTask: (id: number) => Promise<Task>;
+  reorderTasksInPriority: (
+    priority: Priority,
+    orderedIds: number[],
+  ) => Promise<void>;
+  /** 跨优先级移动并在目标组内排序（orderedIdsInTarget 须含该任务 id） */
+  moveTaskBetweenPriorities: (
+    taskId: number,
+    targetPriority: Priority,
+    orderedIdsInTarget: number[],
+  ) => Promise<void>;
 };
 
 export const useTaskStore = create<TaskState>((set) => ({
@@ -94,6 +110,35 @@ export const useTaskStore = create<TaskState>((set) => ({
         tasks: s.tasks.map((t) => (t.id === updated.id ? updated : t)),
       }));
       return updated;
+    } catch (e) {
+      set({ error: String(e) });
+      throw e;
+    }
+  },
+
+  reorderTasksInPriority: async (priority, orderedIds) => {
+    set({ error: null });
+    try {
+      const tasks = await invoke<Task[]>("reorder_tasks_in_priority", {
+        priority,
+        orderedIds,
+      });
+      set({ tasks });
+    } catch (e) {
+      set({ error: String(e) });
+      throw e;
+    }
+  },
+
+  moveTaskBetweenPriorities: async (taskId, targetPriority, orderedIdsInTarget) => {
+    set({ error: null });
+    try {
+      const tasks = await invoke<Task[]>("move_task_between_priorities", {
+        taskId,
+        targetPriority,
+        orderedIdsInTarget,
+      });
+      set({ tasks });
     } catch (e) {
       set({ error: String(e) });
       throw e;

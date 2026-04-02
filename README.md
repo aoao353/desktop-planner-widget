@@ -14,9 +14,9 @@
 |------|------|
 | **任务** | 增删改、完成勾选、优先级（紧急 / 高 / 普通 / 低）、标签、截止日期 |
 | **视图** | 按优先级分组；精简模式折叠窗口高度，仅保留核心区域；可拖拽调整窗口大小 |
-| **系统** | 关闭窗口时隐藏到托盘（非退出）；托盘菜单显示/退出；**Ctrl+Shift+T**（macOS 为 **Cmd+Shift+T**）显示/隐藏窗口 |
-| **自启** | 可选「开机自启」（通过 `tauri-plugin-autostart`） |
-| **数据** | 任务数据保存在应用数据目录下的 `tasks.json`，窗口位置等保存在 `config.json` |
+| **系统** | 关闭窗口时隐藏到托盘（非退出）；托盘菜单显示/退出；顶栏 **设置** 可改全局快捷键、自启、透明度、置顶 |
+| **自启** | 在设置中开关（Rust 侧 `tauri-plugin-autostart` 写入系统自启项） |
+| **数据** | `tasks.json` 存任务；`config.json` 存窗口几何与上述设置（camelCase JSON） |
 
 > **发布前**：请把 `src-tauri/tauri.conf.json` 里的 `identifier`（当前为 `com.lenovo.task-widget`）改成你自己的反向域名标识，避免与上游冲突。
 
@@ -80,15 +80,14 @@ npm run tauri build
 
 | 快捷键 | 作用 |
 |--------|------|
-| **Ctrl+Shift+T**（Windows / Linux） | 显示或隐藏主窗口 |
-| **Cmd+Shift+T**（macOS） | 同上 |
+| **全局快捷键（可选）** | 在设置中填写并保存后才注册，用于显示或隐藏主窗口（冲突时可能注册失败） |
 
 ---
 
 ## 数据与配置位置
 
 - 任务数据：`tasks.json`（位于应用 [`app_data_dir`](https://docs.rs/tauri/latest/tauri/path/enum.BaseDirectory.html) 下由 Rust 侧解析的路径）  
-- 窗口配置：`config.json`（位置与任务数据同目录）  
+- 应用配置：`config.json`（窗口位置/尺寸、全局快捷键、自启、界面透明度、是否置顶）  
 
 卸载或清理应用数据目录会删除上述文件，请自行备份。
 

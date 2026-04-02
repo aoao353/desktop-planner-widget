@@ -44,7 +44,13 @@ export function formatDisplayDate(due: string | null): string {
 }
 
 export function filterTasksByPriority(tasks: Task[], p: Priority): Task[] {
-  return tasks.filter((t) => t.priority === p);
+  return tasks
+    .filter((t) => t.priority === p)
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.order ?? 0) - (b.order ?? 0) || a.id - b.id,
+    );
 }
 
 export function countDueToday(tasks: Task[]): number {

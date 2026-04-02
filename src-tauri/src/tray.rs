@@ -11,7 +11,11 @@ pub fn create_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show_hide, &quit])?;
 
-    let icon = app.default_window_icon().expect("default window icon").clone();
+    let Some(icon) = app.default_window_icon() else {
+        eprintln!("托盘创建失败: 无默认窗口图标");
+        return Ok(());
+    };
+    let icon = icon.clone();
 
     TrayIconBuilder::with_id("main-tray")
         .tooltip("Task Widget")

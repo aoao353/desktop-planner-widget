@@ -1,3 +1,16 @@
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -28,6 +41,8 @@ export function TaskBoard() {
     updateTask,
     deleteTask,
     toggleTask,
+    reorderTasksInPriority,
+    moveTaskBetweenPriorities,
   } = useTaskStore();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -35,6 +50,15 @@ export function TaskBoard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [createPriority, setCreatePriority] = useState<Priority | null>(null);
   const [compact, setCompact] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     void useTaskStore.getState().fetchTasks();
@@ -87,6 +111,59 @@ export function TaskBoard() {
     }
   }
 
+  function sortByOrder(a: Task, b: Task) {
+    return (a.order ?? 0) - (b.order ?? 0) || a.id - b.id;
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = Number(active.id);
+    const activeTask = tasks.find((t) => t.id === activeId);
+    if (!activeTask) return;
+
+    const overRaw = over.id;
+    if (activeId === Number(overRaw)) return;
+
+    const from = activeTask.priority;
+
+    if (String(overRaw).startsWith("column-")) {
+      const to = String(overRaw).replace("column-", "") as Priority;
+      const destSorted = tasks
+        .filter((t) => t.priority === to && t.id !== activeId)
+        .sort(sortByOrder);
+      const newIds = [...destSorted.map((t) => t.id), activeId];
+      void moveTaskBetweenPriorities(activeId, to, newIds);
+      return;
+    }
+
+    const overTask = tasks.find((t) => t.id === Number(overRaw));
+    if (!overTask) return;
+    const to = overTask.priority;
+
+    if (from === to) {
+      const ids = filterTasksByPriority(tasks, from).map((t) => t.id);
+      const oldIndex = ids.indexOf(activeId);
+      const newIndex = ids.indexOf(Number(overRaw));
+      if (oldIndex < 0 || newIndex < 0) return;
+      const newIds = arrayMove(ids, oldIndex, newIndex);
+      void reorderTasksInPriority(from, newIds);
+      return;
+    }
+
+    const destSorted = tasks
+      .filter((t) => t.priority === to && t.id !== activeId)
+      .sort(sortByOrder);
+    const overIdx = destSorted.findIndex((t) => t.id === overTask.id);
+    if (overIdx < 0) return;
+    const newIds = [
+      ...destSorted.slice(0, overIdx).map((t) => t.id),
+      activeId,
+      ...destSorted.slice(overIdx).map((t) => t.id),
+    ];
+    void moveTaskBetweenPriorities(activeId, to, newIds);
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2.5 p-2.5">
       <header className="ui-panel flex shrink-0 cursor-default select-none items-stretch gap-2 px-3 py-2.5">
@@ -94,7 +171,7 @@ export function TaskBoard() {
           data-tauri-drag-region
           className="flex min-w-0 flex-1 flex-col justify-center gap-2.5"
         >
-          <p className="ui-text-secondary text-[12px] font-medium leading-tight">
+          <p className="ui-text-secondary text-[0.8571rem] font-medium leading-tight">
             {dateLabel}
           </p>
           {!compact && (
@@ -111,7 +188,7 @@ export function TaskBoard() {
                   transition={{ type: "spring", stiffness: 280, damping: 32 }}
                 />
               </div>
-              <span className="ui-text-tertiary pointer-events-none shrink-0 text-[11px] tabular-nums">
+              <span className="ui-text-tertiary pointer-events-none shrink-0 text-[0.7857rem] tabular-nums">
                 {done}/{total}
               </span>
             </div>
@@ -147,7 +224,7 @@ export function TaskBoard() {
       >
         {error ? (
           <p
-            className="mb-2 rounded-[var(--radius-card)] border px-2 py-1.5 text-[11px]"
+            className="mb-2 rounded-[var(--radius-card)] border px-2 py-1.5 text-[0.7857rem]"
             style={{
               borderColor: "var(--color-danger)",
               background: "var(--color-danger-muted)",
@@ -159,24 +236,33 @@ export function TaskBoard() {
         ) : null}
 
         {loading && tasks.length === 0 ? (
-          <p className="ui-text-tertiary py-8 text-center text-[12px]">
+          <p className="ui-text-tertiary py-8 text-center text-[0.8571rem]">
             加载中…
           </p>
         ) : (
-          <div className="space-y-5 pb-1">
-            {PRIORITY_ORDER.map((p) => (
-              <TaskSection
-                key={p}
-                priority={p}
-                tasks={filterTasksByPriority(tasks, p)}
-                onToggle={(id) => void toggleTask(id)}
-                onEdit={openEdit}
-                onDelete={(id) => void deleteTask(id)}
-                onAddInSection={() => openCreate(p)}
-                compact={compact}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="space-y-5 pb-1">
+              {PRIORITY_ORDER.map((p) => (
+                <TaskSection
+                  key={p}
+                  priority={p}
+                  tasks={filterTasksByPriority(tasks, p)}
+                  onToggle={(id) => void toggleTask(id)}
+                  onEdit={openEdit}
+                  onDelete={(id) => void deleteTask(id)}
+                  onAddInSection={() => openCreate(p)}
+                  onReorder={(orderedIds) =>
+                    void reorderTasksInPriority(p, orderedIds)
+                  }
+                  compact={compact}
+                />
+              ))}
+            </div>
+          </DndContext>
         )}
       </div>
 

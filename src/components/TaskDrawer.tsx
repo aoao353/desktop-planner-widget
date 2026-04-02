@@ -92,7 +92,7 @@ export function TaskDrawer({
   };
 
   const inputClass =
-    "ui-input w-full px-3 py-2.5 text-[14px] placeholder:text-[var(--color-text-tertiary)]";
+    "ui-input w-full px-3 py-2.5 text-[1rem] placeholder:text-[var(--color-text-tertiary)]";
 
   return (
     <AnimatePresence>
@@ -129,13 +129,13 @@ export function TaskDrawer({
               />
               <h2
                 id="drawer-title"
-                className="ui-text-primary mb-4 text-center text-[15px] font-semibold"
+                className="ui-text-primary mb-4 text-center text-[1.0714rem] font-semibold"
               >
                 {mode === "create" ? "新建任务" : "编辑任务"}
               </h2>
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1.5">
-                  <span className="ui-text-secondary text-[11px] font-medium">
+                  <span className="ui-text-secondary text-[0.7857rem] font-medium">
                     名称
                   </span>
                   <input
@@ -147,7 +147,7 @@ export function TaskDrawer({
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="ui-text-secondary text-[11px] font-medium">
+                  <span className="ui-text-secondary text-[0.7857rem] font-medium">
                     优先级
                   </span>
                   <select
@@ -165,7 +165,7 @@ export function TaskDrawer({
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="ui-text-secondary text-[11px] font-medium">
+                  <span className="ui-text-secondary text-[0.7857rem] font-medium">
                     分类
                   </span>
                   <select
@@ -181,7 +181,7 @@ export function TaskDrawer({
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="ui-text-secondary text-[11px] font-medium">
+                  <span className="ui-text-secondary text-[0.7857rem] font-medium">
                     截止日期
                   </span>
                   <input
@@ -195,14 +195,14 @@ export function TaskDrawer({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="ui-btn-ghost flex-1 py-3 text-[14px] font-medium"
+                    className="ui-btn-ghost flex-1 py-3 text-[1rem] font-medium"
                   >
                     取消
                   </button>
                   <button
                     type="submit"
                     disabled={saving || !name.trim()}
-                    className="ui-btn-primary flex-1 py-3 text-[14px] font-medium disabled:opacity-45"
+                    className="ui-btn-primary flex-1 py-3 text-[1rem] font-medium disabled:opacity-45"
                   >
                     {saving ? "保存中…" : "保存"}
                   </button>

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 import type { Task } from "../stores/useTaskStore";
 import { formatDisplayDate, tagLabels } from "../lib/taskUtils";
 
@@ -8,6 +9,8 @@ type Props = {
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
   compact?: boolean;
+  /** 拖拽排序手柄（由 dnd-kit 注入 listeners / attributes） */
+  dragHandle?: ReactNode;
 };
 
 export function TaskCard({
@@ -16,15 +19,19 @@ export function TaskCard({
   onEdit,
   onDelete,
   compact = false,
+  dragHandle,
 }: Props) {
   return (
     <motion.div
-      layout
+      layout={!dragHandle}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       className={`ui-card group relative transition-colors ${compact ? "px-2 py-1" : "px-2.5 py-2"}`}
     >
       <div className="flex items-center gap-2">
+        {dragHandle ? (
+          <span className="no-drag flex shrink-0">{dragHandle}</span>
+        ) : null}
         <input
           type="checkbox"
           checked={task.done}
@@ -37,7 +44,7 @@ export function TaskCard({
           aria-label={task.done ? "标记未完成" : "标记完成"}
         />
         <p
-          className={`min-w-0 flex-1 leading-snug ${compact ? "text-[12px]" : "text-[13px] font-medium"} ${
+          className={`min-w-0 flex-1 leading-snug ${compact ? "text-[0.8571rem]" : "text-[0.9286rem] font-medium"} ${
             task.done ? "ui-text-tertiary line-through" : "ui-text-primary"
           }`}
         >
@@ -48,7 +55,7 @@ export function TaskCard({
             <button
               type="button"
               onClick={() => onEdit(task)}
-              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[11px] transition"
+              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
               style={{ color: "var(--color-brand)" }}
             >
               编辑
@@ -56,7 +63,7 @@ export function TaskCard({
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[11px] transition"
+              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
               style={{ color: "var(--color-danger)" }}
             >
               删除
@@ -66,11 +73,11 @@ export function TaskCard({
       </div>
       {!compact && (
         <div
-          className="mt-1 ml-5.5 flex flex-wrap items-center gap-1.5 text-[11px]"
+          className="mt-1 ml-5.5 flex flex-wrap items-center gap-1.5 text-[0.7857rem]"
           style={{ color: "var(--color-text-secondary)" }}
         >
           <span
-            className="rounded-[6px] px-1.5 py-0.5"
+            className="rounded-[0.4286rem] px-1.5 py-0.5"
             style={{
               background: "var(--color-surface-muted)",
               color: "var(--color-text-secondary)",

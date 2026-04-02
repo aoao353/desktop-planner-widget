@@ -44,10 +44,10 @@
   --color-danger-muted: rgba(176, 58, 46, 0.12);
   --color-stat-today: #c96442;
 
-  /* Radius */
-  --radius-window: 16px;
-  --radius-card: 10px;
-  --radius-button: 8px;
+  /* Radius（按 14px 基准换算为 rem，随根字号缩放） */
+  --radius-window: 1.1429rem;
+  --radius-card: 0.7143rem;
+  --radius-button: 0.5714rem;
 
   /* Font */
   --font-sans: "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui,
@@ -88,6 +88,11 @@
     --color-danger-muted: rgba(224, 122, 110, 0.15);
     --color-stat-today: #d67a5c;
   }
+}
+
+html {
+  /* 默认 14px；运行时用 JS 覆盖为设置中的字号 */
+  font-size: 14px;
 }
 
 html,
@@ -174,12 +179,12 @@ body,
 .ui-input:focus {
   outline: none;
   border-color: var(--color-brand);
-  box-shadow: 0 0 0 2px rgba(201, 100, 66, 0.2);
+  box-shadow: 0 0 0 0.1429rem rgba(201, 100, 66, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
   .ui-input:focus {
-    box-shadow: 0 0 0 2px rgba(214, 122, 92, 0.25);
+    box-shadow: 0 0 0 0.1429rem rgba(214, 122, 92, 0.25);
   }
 }
 

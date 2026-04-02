@@ -11,7 +11,7 @@ export function StatsBar({ tasks }: Props) {
   const dueToday = countDueToday(tasks);
 
   return (
-    <div className="ui-panel-muted flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 text-[11px]">
+    <div className="ui-panel-muted flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 text-[0.7857rem]">
       <div className="flex flex-col gap-0.5">
         <span className="ui-text-tertiary">总任务</span>
         <span className="ui-text-primary text-sm font-semibold tabular-nums">
