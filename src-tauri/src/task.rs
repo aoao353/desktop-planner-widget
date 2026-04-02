@@ -116,6 +116,25 @@ fn sort_tasks_for_storage(tasks: &mut [Task]) {
     });
 }
 
+/// 同一优先级内：未完成任务在上，已完成在下；各段内按原 `order`、`id` 稳定排序。
+fn reorder_priority_done_at_bottom(tasks: &mut Vec<Task>, priority: Priority) {
+    let mut entries: Vec<(u32, bool, i32)> = tasks
+        .iter()
+        .filter(|t| t.priority == priority)
+        .map(|t| (t.id, t.done, t.order))
+        .collect();
+    entries.sort_by(|a, b| {
+        a.1.cmp(&b.1) // false(未完成) < true(已完成)
+            .then_with(|| a.2.cmp(&b.2))
+            .then_with(|| a.0.cmp(&b.0))
+    });
+    for (i, (id, _, _)) in entries.iter().enumerate() {
+        if let Some(t) = tasks.iter_mut().find(|t| t.id == *id) {
+            t.order = i as i32;
+        }
+    }
+}
+
 fn write_tasks(path: &Path, tasks: &mut [Task]) -> Result<(), String> {
     sort_tasks_for_storage(tasks);
     let json = serde_json::to_string_pretty(tasks).map_err(|e| e.to_string())?;
@@ -201,7 +220,7 @@ pub fn add_task(app: AppHandle, state: State<TaskMutex>, task: NewTask) -> Resul
 }
 
 #[tauri::command]
-pub fn update_task(app: AppHandle, state: State<TaskMutex>, task: Task) -> Result<Task, String> {
+pub fn update_task(app: AppHandle, state: State<TaskMutex>, task: Task) -> Result<Vec<Task>, String> {
     let _guard = state.0.lock().map_err(|e| e.to_string())?;
     let path = tasks_path(&app)?;
     let mut tasks = read_tasks(&path)?;
@@ -219,9 +238,15 @@ pub fn update_task(app: AppHandle, state: State<TaskMutex>, task: Task) -> Resul
     } else if task.completed_date.is_none() {
         task.completed_date = Some(local_ymd());
     }
+    let old_priority = old.priority;
+    let new_priority = task.priority;
     tasks[pos] = task.clone();
+    reorder_priority_done_at_bottom(&mut tasks, new_priority);
+    if old_priority != new_priority {
+        reorder_priority_done_at_bottom(&mut tasks, old_priority);
+    }
     write_tasks(&path, &mut tasks)?;
-    Ok(task)
+    Ok(tasks)
 }
 
 #[tauri::command]
@@ -239,23 +264,26 @@ pub fn delete_task(app: AppHandle, state: State<TaskMutex>, id: u32) -> Result<b
 }
 
 #[tauri::command]
-pub fn toggle_task(app: AppHandle, state: State<TaskMutex>, id: u32) -> Result<Task, String> {
+pub fn toggle_task(app: AppHandle, state: State<TaskMutex>, id: u32) -> Result<Vec<Task>, String> {
     let _guard = state.0.lock().map_err(|e| e.to_string())?;
     let path = tasks_path(&app)?;
     let mut tasks = read_tasks(&path)?;
-    let task = tasks
-        .iter_mut()
-        .find(|t| t.id == id)
-        .ok_or_else(|| "task not found".to_string())?;
-    task.done = !task.done;
-    if task.done {
-        task.completed_date = Some(local_ymd());
-    } else {
-        task.completed_date = None;
-    }
-    let updated = task.clone();
+    let priority = {
+        let task = tasks
+            .iter_mut()
+            .find(|t| t.id == id)
+            .ok_or_else(|| "task not found".to_string())?;
+        task.done = !task.done;
+        if task.done {
+            task.completed_date = Some(local_ymd());
+        } else {
+            task.completed_date = None;
+        }
+        task.priority
+    };
+    reorder_priority_done_at_bottom(&mut tasks, priority);
     write_tasks(&path, &mut tasks)?;
-    Ok(updated)
+    Ok(tasks)
 }
 
 fn reorder_in_priority_impl(

@@ -34,7 +34,7 @@ type TaskState = {
   addTask: (task: NewTask) => Promise<Task>;
   updateTask: (task: Task) => Promise<Task>;
   deleteTask: (id: number) => Promise<boolean>;
-  toggleTask: (id: number) => Promise<Task>;
+  toggleTask: (id: number) => Promise<void>;
   reorderTasksInPriority: (
     priority: Priority,
     orderedIds: number[],
@@ -77,11 +77,9 @@ export const useTaskStore = create<TaskState>((set) => ({
   updateTask: async (task) => {
     set({ error: null });
     try {
-      const updated = await invoke<Task>("update_task", { task });
-      set((s) => ({
-        tasks: s.tasks.map((t) => (t.id === updated.id ? updated : t)),
-      }));
-      return updated;
+      const tasks = await invoke<Task[]>("update_task", { task });
+      set({ tasks });
+      return tasks.find((t) => t.id === task.id)!;
     } catch (e) {
       set({ error: String(e) });
       throw e;
@@ -105,11 +103,8 @@ export const useTaskStore = create<TaskState>((set) => ({
   toggleTask: async (id) => {
     set({ error: null });
     try {
-      const updated = await invoke<Task>("toggle_task", { id });
-      set((s) => ({
-        tasks: s.tasks.map((t) => (t.id === updated.id ? updated : t)),
-      }));
-      return updated;
+      const tasks = await invoke<Task[]>("toggle_task", { id });
+      set({ tasks });
     } catch (e) {
       set({ error: String(e) });
       throw e;

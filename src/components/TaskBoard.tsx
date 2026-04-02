@@ -20,6 +20,7 @@ import {
   type Priority,
   type Task,
 } from "../stores/useTaskStore";
+import { onWindowDragMouseDown } from "../lib/windowDrag";
 import {
   filterTasksByPriority,
   PRIORITY_ORDER,
@@ -166,10 +167,10 @@ export function TaskBoard() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2.5 p-2.5">
-      <header className="ui-panel flex shrink-0 cursor-default select-none items-stretch gap-2 px-3 py-2.5">
+      <header className="ui-panel flex shrink-0 select-none items-stretch gap-2 px-3 py-2.5">
         <div
-          data-tauri-drag-region
-          className="flex min-w-0 flex-1 flex-col justify-center gap-2.5"
+          className="window-drag-handle flex min-w-0 flex-1 flex-col justify-center gap-2.5"
+          onMouseDown={onWindowDragMouseDown}
         >
           <p className="ui-text-secondary text-[0.8571rem] font-medium leading-tight">
             {dateLabel}

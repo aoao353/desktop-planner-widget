@@ -113,11 +113,12 @@ body,
   -webkit-backdrop-filter: blur(var(--blur-glass));
 }
 
-/* Tauri drag — !important 以便在 .no-drag 容器内嵌套拖拽区时仍生效 */
-[data-tauri-drag-region] {
-  -webkit-app-region: drag !important;
-  app-region: drag !important;
-  cursor: default;
+/* 程序化拖拽（startDragging）用 .window-drag-handle 提示可拖；声明式 data-tauri-drag-region 已弃用 */
+.window-drag-handle {
+  cursor: grab;
+}
+.window-drag-handle:active {
+  cursor: grabbing;
 }
 
 .no-drag,

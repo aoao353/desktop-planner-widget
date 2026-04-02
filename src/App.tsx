@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { onWindowDragMouseDown } from "./lib/windowDrag";
 import { useEffect, useState } from "react";
 import { HistoryDrawer } from "./components/HistoryDrawer";
 import { SettingsDrawer } from "./components/SettingsDrawer";
@@ -39,21 +40,16 @@ export default function App() {
 
   return (
     <div
-      data-tauri-drag-region
       className="ui-app-glass flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-window)]"
       style={{ opacity: shellOpacity }}
     >
       <div
-        data-tauri-drag-region
-        className="flex shrink-0 items-center justify-between border-b px-2 py-1.5"
+        className="window-drag-handle flex shrink-0 items-center justify-between border-b px-2 py-1.5 select-none"
         style={{ borderColor: "var(--color-border)" }}
+        onMouseDown={onWindowDragMouseDown}
       >
-        <div
-          data-tauri-drag-region
-          className="flex flex-1 cursor-grab items-center gap-1.5 select-none"
-        >
+        <div className="flex flex-1 items-center gap-1.5">
           <svg
-            data-tauri-drag-region
             className="size-[0.8571rem] shrink-0"
             viewBox="0 0 12 12"
             fill="none"
@@ -69,7 +65,6 @@ export default function App() {
             <circle cx="9" cy="6" r="1.2" fill="currentColor" />
           </svg>
           <span
-            data-tauri-drag-region
             className="text-[0.7857rem]"
             style={{ color: "var(--color-text-tertiary)" }}
           >
