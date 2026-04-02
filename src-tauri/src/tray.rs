@@ -2,7 +2,6 @@
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::Manager;
 
 use crate::app_config;
 use crate::toggle_window;
@@ -18,7 +17,7 @@ pub fn create_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
         .tooltip("Task Widget")
         .icon(icon)
         .menu(&menu)
-        .menu_on_left_click(false)
+        .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "toggle" => {
                 toggle_window(app);

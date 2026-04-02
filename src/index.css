@@ -1,5 +1,95 @@
 @import "tailwindcss";
 
+/* Claude / Anthropic — design tokens */
+:root {
+  /* Base & glass */
+  --color-bg-base: #f5f4ef;
+  --color-bg-glass: rgba(245, 244, 239, 0.92);
+  --blur-glass: 20px;
+
+  /* Brand & emphasis */
+  --color-brand: #c96442;
+  --color-brand-hover: #b55738;
+
+  /* Text */
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #6b6860;
+  --color-text-tertiary: #9b9a94;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: rgba(245, 244, 239, 0.65);
+  --color-surface-elevated: #ffffff;
+
+  /* Borders */
+  --color-border: rgba(26, 26, 24, 0.12);
+  --color-border-strong: rgba(26, 26, 24, 0.18);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Priority (semantic, warm) */
+  --color-priority-urgent: #c0392b;
+  --color-priority-high: #c96442;
+  --color-priority-normal: #2e6da4;
+  --color-priority-low: #888780;
+
+  /* UI accents */
+  --color-progress: #c96442;
+  --color-progress-track: rgba(26, 26, 24, 0.08);
+  --color-backdrop: rgba(26, 26, 24, 0.35);
+  --color-done: #4a7c3f;
+  --color-danger: #b03a2e;
+  --color-danger-muted: rgba(176, 58, 46, 0.12);
+  --color-stat-today: #c96442;
+
+  /* Radius */
+  --radius-window: 16px;
+  --radius-card: 10px;
+  --radius-button: 8px;
+
+  /* Font */
+  --font-sans: "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-base: #1c1b19;
+    --color-bg-glass: rgba(28, 27, 25, 0.92);
+
+    --color-text-primary: #f5f4ef;
+    --color-text-secondary: #c4c1ba;
+    --color-text-tertiary: #9b9890;
+
+    --color-surface: rgba(42, 40, 38, 0.95);
+    --color-surface-muted: rgba(55, 52, 48, 0.6);
+    --color-surface-elevated: #2a2826;
+
+    --color-border: rgba(245, 244, 239, 0.1);
+    --color-border-strong: rgba(245, 244, 239, 0.16);
+
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+    --color-progress-track: rgba(245, 244, 239, 0.12);
+
+    --color-backdrop: rgba(0, 0, 0, 0.45);
+
+    --color-priority-urgent: #e07a6e;
+    --color-priority-high: #d67a5c;
+    --color-priority-normal: #6a9fd4;
+    --color-priority-low: #a8a69e;
+
+    --color-brand-hover: #d67a5c;
+    --color-done: #6faf63;
+    --color-danger: #e07a6e;
+    --color-danger-muted: rgba(224, 122, 110, 0.15);
+    --color-stat-today: #d67a5c;
+  }
+}
+
 html,
 body,
 #root {
@@ -7,10 +97,147 @@ body,
   height: 100%;
   overflow: hidden;
   background: transparent;
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
 }
 
-/* 避免可点击控件被当作拖拽区域（与 data-tauri-drag-region 配合） */
+/* Shell: warm glass behind transparent Tauri window */
+.ui-app-glass {
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+/* Tauri drag */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
 .no-drag {
   -webkit-app-region: no-drag;
   app-region: no-drag;
+}
+
+/* Semantic surfaces */
+.ui-panel {
+  background: var(--color-surface-elevated);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-panel);
+}
+
+.ui-panel-muted {
+  background: var(--color-surface-muted);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-window);
+}
+
+.ui-card {
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.ui-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.ui-btn-primary {
+  background: var(--color-brand);
+  color: #fff;
+  border-radius: var(--radius-button);
+  border: 0.5px solid transparent;
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.ui-btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-button);
+}
+
+.ui-input {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.ui-input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 2px rgba(201, 100, 66, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ui-input:focus {
+    box-shadow: 0 0 0 2px rgba(214, 122, 92, 0.25);
+  }
+}
+
+/* Priority dots */
+.ui-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.ui-dot--urgent {
+  background: var(--color-priority-urgent);
+  box-shadow: 0 0 0 1px rgba(192, 57, 43, 0.25);
+}
+
+.ui-dot--high {
+  background: var(--color-priority-high);
+  box-shadow: 0 0 0 1px rgba(201, 100, 66, 0.3);
+}
+
+.ui-dot--normal {
+  background: var(--color-priority-normal);
+  box-shadow: 0 0 0 1px rgba(46, 109, 164, 0.25);
+}
+
+.ui-dot--low {
+  background: var(--color-priority-low);
+  box-shadow: 0 0 0 1px rgba(136, 135, 128, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ui-dot--urgent {
+    box-shadow: 0 0 0 1px rgba(224, 122, 110, 0.35);
+  }
+  .ui-dot--high {
+    box-shadow: 0 0 0 1px rgba(214, 122, 92, 0.35);
+  }
+  .ui-dot--normal {
+    box-shadow: 0 0 0 1px rgba(106, 159, 212, 0.35);
+  }
+  .ui-dot--low {
+    box-shadow: 0 0 0 1px rgba(168, 166, 158, 0.35);
+  }
+}
+
+/* Checkbox — done state */
+.ui-checkbox-task {
+  accent-color: var(--color-done);
+}
+
+/* Text helpers */
+.ui-text-primary {
+  color: var(--color-text-primary);
+}
+
+.ui-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.ui-text-tertiary {
+  color: var(--color-text-tertiary);
 }

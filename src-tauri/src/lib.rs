@@ -32,14 +32,14 @@ pub fn run() {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
-        let shortcuts: &[&str] = if cfg!(target_os = "macos") {
-            &["cmd+shift+t"]
+        let shortcut = if cfg!(target_os = "macos") {
+            "cmd+shift+t"
         } else {
-            &["ctrl+shift+t"]
+            "ctrl+shift+t"
         };
         builder = builder.plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(shortcuts)
+                .with_shortcuts([shortcut])
                 .expect("register global shortcut ctrl/cmd+shift+t")
                 .with_handler(|app, _shortcut, event| {
                     use tauri_plugin_global_shortcut::ShortcutState;
@@ -56,6 +56,9 @@ pub fn run() {
         .setup(|app| {
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.set_decorations(false);
+                }
                 tray::create_tray(app.handle())?;
                 app_config::apply_window_config(app.handle())?;
             }

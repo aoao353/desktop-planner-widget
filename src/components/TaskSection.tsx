@@ -4,10 +4,10 @@ import { priorityLabels } from "../lib/taskUtils";
 import { TaskCard } from "./TaskCard";
 
 const dotClass: Record<Priority, string> = {
-  urgent: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.55)]",
-  high: "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]",
-  normal: "bg-sky-500 shadow-[0_0_8px_rgba(56,189,248,0.45)]",
-  low: "bg-zinc-500 shadow-[0_0_6px_rgba(113,113,122,0.4)]",
+  urgent: "ui-dot ui-dot--urgent",
+  high: "ui-dot ui-dot--high",
+  normal: "ui-dot ui-dot--normal",
+  low: "ui-dot ui-dot--low",
 };
 
 type Props = {
@@ -33,17 +33,21 @@ export function TaskSection({
       animate={{ opacity: 1 }}
     >
       <div className="flex items-center gap-2 px-0.5">
-        <span
-          className={`size-2 shrink-0 rounded-full ${dotClass[priority]}`}
-          aria-hidden
-        />
-        <h3 className="text-[12px] font-semibold tracking-wide text-white/75">
+        <span className={dotClass[priority]} aria-hidden />
+        <h3 className="ui-text-primary text-[12px] font-semibold tracking-wide">
           {priorityLabels[priority]}
         </h3>
-        <span className="text-[11px] text-white/35">({tasks.length})</span>
+        <span className="ui-text-tertiary text-[11px]">({tasks.length})</span>
       </div>
       {tasks.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-4 text-center text-[11px] text-white/35">
+        <p
+          className="rounded-[var(--radius-card)] border border-dashed px-3 py-4 text-center text-[11px]"
+          style={{
+            borderColor: "var(--color-border)",
+            background: "var(--color-surface-muted)",
+            color: "var(--color-text-tertiary)",
+          }}
+        >
           暂无任务
         </p>
       ) : (

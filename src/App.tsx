@@ -29,12 +29,19 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-transparent">
-      <div className="no-drag flex shrink-0 items-center justify-end gap-2 border-b border-white/[0.06] px-2 py-1.5">
-        <label className="flex cursor-pointer items-center gap-2 text-[11px] text-white/55">
+    <div className="ui-app-glass flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-window)]">
+      <div
+        className="no-drag flex shrink-0 items-center justify-end gap-2 border-b px-2 py-1.5"
+        style={{ borderColor: "var(--color-border)" }}
+      >
+        <label className="ui-text-secondary flex cursor-pointer items-center gap-2 text-[11px]">
           <input
             type="checkbox"
-            className="size-3.5 rounded border-white/25 accent-sky-400"
+            className="ui-checkbox-task size-3.5 rounded border"
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+            }}
             checked={autoStart}
             disabled={!autostartReady}
             onChange={(e) => void onAutostartChange(e.target.checked)}
