@@ -14,6 +14,8 @@ type Props = {
   open: boolean;
   mode: Mode;
   task: Task | null;
+  /** 新建时预选的优先级（例如从分组旁「+」打开） */
+  initialPriority?: Priority;
   onClose: () => void;
   onSave: (payload: NewTask | Task) => Promise<void>;
 };
@@ -25,7 +27,14 @@ const emptyForm = (): NewTask => ({
   due: null,
 });
 
-export function TaskDrawer({ open, mode, task, onClose, onSave }: Props) {
+export function TaskDrawer({
+  open,
+  mode,
+  task,
+  initialPriority,
+  onClose,
+  onSave,
+}: Props) {
   const [name, setName] = useState("");
   const [priority, setPriority] = useState<Priority>("normal");
   const [tag, setTag] = useState<Tag>("personal");
@@ -42,11 +51,11 @@ export function TaskDrawer({ open, mode, task, onClose, onSave }: Props) {
     } else {
       const e = emptyForm();
       setName(e.name);
-      setPriority(e.priority);
+      setPriority(initialPriority ?? e.priority);
       setTag(e.tag);
       setDue("");
     }
-  }, [open, mode, task]);
+  }, [open, mode, task, initialPriority]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

@@ -6,6 +6,9 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "autostart:default"
+    "autostart:default",
+    "core:window:allow-set-size",
+    "core:window:allow-outer-size",
+    "core:window:allow-scale-factor"
   ]
 }

@@ -16,10 +16,11 @@
         "title": "task-widget",
         "width": 320,
         "height": 600,
-        "resizable": false,
+        "resizable": true,
+        "minWidth": 280,
+        "minHeight": 240,
         "decorations": false,
-        "transparent": true,
-        "alwaysOnTop": true
+        "transparent": true
       }
     ],
     "security": {
