@@ -39,7 +39,6 @@ type Props = {
   onAddInSection?: () => void;
   /** 同优先级内拖拽结束后的 id 顺序（持久化由上层调用 invoke） */
   onReorder?: (orderedIds: number[]) => void;
-  compact?: boolean;
 };
 
 function SortableTaskRow({
@@ -101,7 +100,6 @@ function SortableTaskRow({
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
-          compact={false}
           dragHandle={
             <button
               type="button"
@@ -125,45 +123,8 @@ function SortableTaskRow({
   );
 }
 
-/** 精简模式：无 DndContext，故不使用 useDroppable / useSortable */
-function TaskSectionCompact({
-  tasks,
-  onToggle,
-  onEdit,
-  onDelete,
-}: Pick<
-  Props,
-  "tasks" | "onToggle" | "onEdit" | "onDelete"
->) {
-  if (tasks.length === 0) return null;
-  return (
-    <motion.section
-      layout
-      className="space-y-2 rounded-[var(--radius-card)]"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <ul className="space-y-0.5">
-        <AnimatePresence mode="popLayout" initial={false}>
-          {tasks.map((t) => (
-            <motion.li key={t.id} layout exit={liExit}>
-              <TaskCard
-                task={t}
-                onToggle={onToggle}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                compact
-              />
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
-    </motion.section>
-  );
-}
-
-/** 完整视图：须在 TaskBoard 的 DndContext 内渲染 */
-function TaskSectionFull({
+/** 须在 TaskBoard 的 DndContext 内渲染 */
+export function TaskSection({
   priority,
   tasks,
   onToggle,
@@ -171,7 +132,7 @@ function TaskSectionFull({
   onDelete,
   onAddInSection,
   onReorder,
-}: Omit<Props, "compact">) {
+}: Props) {
   const droppableId = columnDroppableId(priority);
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId,
@@ -209,7 +170,6 @@ function TaskSectionFull({
                 onToggle={onToggle}
                 onEdit={onEdit}
                 onDelete={onDelete}
-                compact={false}
               />
             </motion.li>
           ))}
@@ -299,19 +259,4 @@ function TaskSectionFull({
       )}
     </motion.section>
   );
-}
-
-export function TaskSection(props: Props) {
-  const { compact, ...rest } = props;
-  if (compact) {
-    return (
-      <TaskSectionCompact
-        tasks={rest.tasks}
-        onToggle={rest.onToggle}
-        onEdit={rest.onEdit}
-        onDelete={rest.onDelete}
-      />
-    );
-  }
-  return <TaskSectionFull {...rest} />;
 }

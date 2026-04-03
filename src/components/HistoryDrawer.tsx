@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import type { Priority, Tag, Task } from "../stores/useTaskStore";
 import {
   type DayHistoryRow,
@@ -78,7 +79,73 @@ function computeStreak(dayHistoryMap: Map<string, DayHistoryRow>): number {
   return streak;
 }
 
+const HEATMAP_EDGE_PX = 48;
+const HEATMAP_MAX_SCROLL_SPEED = 6;
+
 export function HistoryDrawer({ open, tasks, onClose }: Props) {
+  const heatmapScrollRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  function handleHeatmapMouseMove(e: MouseEvent<HTMLDivElement>) {
+    const el = heatmapScrollRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const EDGE = HEATMAP_EDGE_PX;
+    const MAX_SPEED = HEATMAP_MAX_SCROLL_SPEED;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    let speed = 0;
+    if (x < EDGE) {
+      speed = -MAX_SPEED * (1 - x / EDGE);
+    } else if (x > width - EDGE) {
+      speed = MAX_SPEED * (1 - (width - x) / EDGE);
+    }
+
+    if (speed === 0) return;
+
+    function scroll() {
+      const node = heatmapScrollRef.current;
+      if (!node) {
+        rafRef.current = null;
+        return;
+      }
+      node.scrollLeft += speed;
+      rafRef.current = requestAnimationFrame(scroll);
+    }
+    rafRef.current = requestAnimationFrame(scroll);
+  }
+
+  function handleHeatmapMouseLeave() {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      const el = heatmapScrollRef.current;
+      if (el) {
+        el.scrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+      }
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const heatColors = isDark ? HEAT_COLORS_DARK : HEAT_COLORS_LIGHT;
 
@@ -199,7 +266,22 @@ export function HistoryDrawer({ open, tasks, onClose }: Props) {
                 ))}
               </div>
 
-              <div style={{ overflowX: "auto" }}>
+              <div
+                ref={heatmapScrollRef}
+                onMouseMove={handleHeatmapMouseMove}
+                onMouseLeave={handleHeatmapMouseLeave}
+                className="[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                style={{
+                  overflowX: "auto",
+                  scrollbarWidth: "none",
+                  WebkitOverflowScrolling: "touch",
+                  cursor: "default",
+                  WebkitMaskImage:
+                    "linear-gradient(to right, transparent 0px, black 32px, black calc(100% - 32px), transparent 100%)",
+                  maskImage:
+                    "linear-gradient(to right, transparent 0px, black 32px, black calc(100% - 32px), transparent 100%)",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",

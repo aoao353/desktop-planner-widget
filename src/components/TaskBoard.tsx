@@ -13,9 +13,8 @@ import {
   arrayMove,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import {
   useTaskStore,
   type NewTask,
@@ -24,22 +23,18 @@ import {
 } from "../stores/useTaskStore";
 import { onWindowDragMouseDown } from "../lib/windowDrag";
 import {
+  dateTabLabel,
+  everyTaskMatchesDateView,
+  filterTasksByDate,
   filterTasksByPriority,
+  offsetLocalISO,
   PRIORITY_ORDER,
+  todayLocalISO,
 } from "../lib/taskUtils";
 import { StatsBar } from "./StatsBar";
 import { TaskCard } from "./TaskCard";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskSection } from "./TaskSection";
-
-/**
- * 窗口逻辑高度（`LogicalSize`，与 `setSize` 一致）。
- * 须与顶栏、内边距、正文区布局大致匹配；根字号见 `src/index.css` 的 `html { font-size }`
- *（运行时可被设置中的字号覆盖）。若改布局或全局字号，请同步调整，避免裁切或过多留白。
- */
-const FULL_HEIGHT = 600;
-/** 精简模式：同上，需与折叠后可见内容高度协调 */
-const COMPACT_HEIGHT = 240;
 
 function overlayShadow(): string {
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -65,8 +60,9 @@ export function TaskBoard() {
   const [drawerMode, setDrawerMode] = useState<"create" | "edit">("create");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [createPriority, setCreatePriority] = useState<Priority | null>(null);
-  const [compact, setCompact] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [viewDate, setViewDate] = useState<string>(() => todayLocalISO());
+  const [createDue, setCreateDue] = useState<string>(() => todayLocalISO());
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -80,6 +76,20 @@ export function TaskBoard() {
   useEffect(() => {
     void useTaskStore.getState().fetchTasks();
   }, []);
+
+  const dateTabs = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const ymd = offsetLocalISO(i);
+      const count = filterTasksByDate(tasks, ymd).filter((t) => !t.done)
+        .length;
+      return { ymd, label: dateTabLabel(ymd), count };
+    });
+  }, [tasks]);
+
+  const canReorder = useMemo(
+    () => everyTaskMatchesDateView(tasks, viewDate),
+    [tasks, viewDate],
+  );
 
   const total = tasks.length;
   const done = tasks.filter((t) => t.done).length;
@@ -95,6 +105,7 @@ export function TaskBoard() {
     setDrawerMode("create");
     setEditingTask(null);
     setCreatePriority(priority ?? null);
+    setCreateDue(viewDate);
     setDrawerOpen(true);
   }
 
@@ -110,21 +121,6 @@ export function TaskBoard() {
       await updateTask(payload as Task);
     } else {
       await addTask(payload as NewTask);
-    }
-  }
-
-  async function toggleCompact() {
-    const next = !compact;
-    setCompact(next);
-    try {
-      const win = getCurrentWindow();
-      const factor = await win.scaleFactor();
-      const { width } = await win.outerSize();
-      const logicalWidth = Math.round(width / factor);
-      const targetHeight = next ? COMPACT_HEIGHT : FULL_HEIGHT;
-      await win.setSize(new LogicalSize(logicalWidth, targetHeight));
-    } catch (e) {
-      console.error("resize failed", e);
     }
   }
 
@@ -200,37 +196,24 @@ export function TaskBoard() {
           <p className="ui-text-secondary text-[0.8571rem] font-medium leading-tight">
             {dateLabel}
           </p>
-          {!compact && (
-            <div className="flex items-center gap-2">
-              <div
-                className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
-                style={{ background: "var(--color-progress-track)" }}
-              >
-                <motion.div
-                  className="pointer-events-none h-full rounded-full"
-                  style={{ background: "var(--color-progress)" }}
-                  initial={false}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ type: "spring", stiffness: 280, damping: 32 }}
-                />
-              </div>
-              <span className="ui-text-tertiary pointer-events-none shrink-0 text-[0.7857rem] tabular-nums">
-                {done}/{total}
-              </span>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
+              style={{ background: "var(--color-progress-track)" }}
+            >
+              <motion.div
+                className="pointer-events-none h-full rounded-full"
+                style={{ background: "var(--color-progress)" }}
+                initial={false}
+                animate={{ width: `${pct}%` }}
+                transition={{ type: "spring", stiffness: 280, damping: 32 }}
+              />
             </div>
-          )}
+            <span className="ui-text-tertiary pointer-events-none shrink-0 text-[0.7857rem] tabular-nums">
+              {done}/{total}
+            </span>
+          </div>
         </div>
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={() => void toggleCompact()}
-          className="no-drag pointer-events-auto flex size-10 shrink-0 items-center justify-center self-center rounded-[var(--radius-button)] text-sm transition"
-          style={{ color: "var(--color-text-tertiary)" }}
-          aria-label={compact ? "展开" : "折叠"}
-          title={compact ? "展开完整视图" : "精简模式"}
-        >
-          {compact ? "▽" : "△"}
-        </button>
         <button
           type="button"
           onMouseDown={(e) => {
@@ -244,16 +227,50 @@ export function TaskBoard() {
         </button>
       </header>
 
-      <motion.div
-        className="no-drag ui-panel-muted min-h-0 flex-1 overflow-x-hidden px-3 py-3"
-        style={{ overflowY: compact ? "hidden" : "auto" }}
-        initial={false}
-        animate={{
-          opacity: compact ? 0 : 1,
-          height: compact ? 0 : "auto",
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      <div
+        className="no-drag shrink-0 flex gap-1 overflow-x-auto px-2.5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none" }}
       >
+        {dateTabs.map((tab) => {
+          const isActive = tab.ymd === viewDate;
+          return (
+            <button
+              key={tab.ymd}
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={() => setViewDate(tab.ymd)}
+              className="flex shrink-0 flex-col items-center rounded-[var(--radius-button)] px-3 py-1.5 transition-colors"
+              style={{
+                background: isActive
+                  ? "var(--color-brand)"
+                  : "var(--color-surface-muted)",
+                color: isActive ? "#fff" : "var(--color-text-secondary)",
+                border: "0.5px solid",
+                borderColor: isActive
+                  ? "var(--color-brand)"
+                  : "var(--color-border)",
+              }}
+            >
+              <span style={{ fontSize: "0.7143rem", fontWeight: 500 }}>
+                {tab.label}
+              </span>
+              {tab.count > 0 ? (
+                <span
+                  style={{
+                    fontSize: "0.6429rem",
+                    opacity: isActive ? 0.85 : 0.6,
+                    marginTop: 1,
+                  }}
+                >
+                  {tab.count} 项
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="no-drag ui-panel-muted min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3">
         {error ? (
           <p
             className="mb-2 rounded-[var(--radius-card)] border px-2 py-1.5 text-[0.7857rem]"
@@ -279,26 +296,37 @@ export function TaskBoard() {
             onDragEnd={handleDragEnd}
             onDragCancel={() => setActiveTask(null)}
           >
-            <div
-              className="space-y-5 pb-1"
-              style={{ display: compact ? "none" : undefined }}
-            >
-              {PRIORITY_ORDER.map((p) => (
-                <TaskSection
-                  key={p}
-                  priority={p}
-                  tasks={filterTasksByPriority(tasks, p)}
-                  onToggle={(id) => void toggleTask(id)}
-                  onEdit={openEdit}
-                  onDelete={(id) => void deleteTask(id)}
-                  onAddInSection={() => openCreate(p)}
-                  onReorder={(orderedIds) =>
-                    void reorderTasksInPriority(p, orderedIds)
-                  }
-                  compact={false}
-                />
-              ))}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={viewDate}
+                className="space-y-5 pb-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {PRIORITY_ORDER.map((p) => (
+                  <TaskSection
+                    key={p}
+                    priority={p}
+                    tasks={filterTasksByPriority(
+                      filterTasksByDate(tasks, viewDate),
+                      p,
+                    )}
+                    onToggle={(id) => void toggleTask(id)}
+                    onEdit={openEdit}
+                    onDelete={(id) => void deleteTask(id)}
+                    onAddInSection={() => openCreate(p)}
+                    onReorder={
+                      canReorder
+                        ? (orderedIds) =>
+                            void reorderTasksInPriority(p, orderedIds)
+                        : undefined
+                    }
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
 
             <DragOverlay
               dropAnimation={{
@@ -321,16 +349,15 @@ export function TaskBoard() {
                     onToggle={() => {}}
                     onEdit={() => {}}
                     onDelete={() => {}}
-                    compact={false}
                   />
                 </div>
               ) : null}
             </DragOverlay>
           </DndContext>
         )}
-      </motion.div>
+      </div>
 
-      {!compact && <StatsBar tasks={tasks} />}
+      <StatsBar tasks={tasks} />
 
       <TaskDrawer
         open={drawerOpen}
@@ -339,6 +366,7 @@ export function TaskBoard() {
         initialPriority={
           drawerMode === "create" ? createPriority ?? undefined : undefined
         }
+        initialDue={drawerMode === "create" ? createDue : undefined}
         onClose={() => {
           setDrawerOpen(false);
           setCreatePriority(null);

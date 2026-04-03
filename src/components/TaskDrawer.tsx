@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import type { NewTask, Priority, Tag, Task } from "../stores/useTaskStore";
 import {
+  offsetLocalISO,
   priorityLabels,
   PRIORITY_ORDER,
   TAG_ORDER,
@@ -16,6 +17,8 @@ type Props = {
   task: Task | null;
   /** 新建时预选的优先级（例如从分组旁「+」打开） */
   initialPriority?: Priority;
+  /** 新建时预填的截止日期 YYYY-MM-DD */
+  initialDue?: string;
   onClose: () => void;
   onSave: (payload: NewTask | Task) => Promise<void>;
 };
@@ -32,6 +35,7 @@ export function TaskDrawer({
   mode,
   task,
   initialPriority,
+  initialDue,
   onClose,
   onSave,
 }: Props) {
@@ -53,9 +57,9 @@ export function TaskDrawer({
       setName(e.name);
       setPriority(initialPriority ?? e.priority);
       setTag(e.tag);
-      setDue("");
+      setDue(initialDue ?? "");
     }
-  }, [open, mode, task, initialPriority]);
+  }, [open, mode, task, initialPriority, initialDue]);
 
   useEffect(() => {
     if (!open) return;
@@ -193,6 +197,41 @@ export function TaskDrawer({
                   <span className="ui-text-secondary text-[0.7857rem] font-medium">
                     截止日期
                   </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        { label: "今天", value: offsetLocalISO(0) },
+                        { label: "明天", value: offsetLocalISO(1) },
+                        { label: "后天", value: offsetLocalISO(2) },
+                        { label: "下周", value: offsetLocalISO(7) },
+                        { label: "无", value: "" },
+                      ] as const
+                    ).map((opt) => {
+                      const isActive = due === opt.value;
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => setDue(opt.value)}
+                          className="rounded-[var(--radius-button)] px-2.5 py-1 text-[0.7857rem] transition"
+                          style={{
+                            background: isActive
+                              ? "var(--color-brand)"
+                              : "var(--color-surface-muted)",
+                            color: isActive
+                              ? "#fff"
+                              : "var(--color-text-secondary)",
+                            border: "0.5px solid",
+                            borderColor: isActive
+                              ? "var(--color-brand)"
+                              : "var(--color-border)",
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <input
                     type="date"
                     value={due}

@@ -8,7 +8,6 @@ type Props = {
   onToggle: (id: number) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
-  compact?: boolean;
   /** 拖拽排序手柄（由 dnd-kit 注入 listeners / attributes） */
   dragHandle?: ReactNode;
 };
@@ -18,7 +17,6 @@ export function TaskCard({
   onToggle,
   onEdit,
   onDelete,
-  compact = false,
   dragHandle,
 }: Props) {
   return (
@@ -32,7 +30,7 @@ export function TaskCard({
         boxShadow: "var(--shadow-card-hover)",
       }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`ui-card group relative transition-colors ${compact ? "px-2 py-1" : "px-2.5 py-2"}`}
+      className="ui-card group relative px-2.5 py-2 transition-colors"
     >
       <div className="flex items-center gap-2">
         {dragHandle ? (
@@ -66,54 +64,50 @@ export function TaskCard({
         </span>
         <motion.p
           data-done={task.done ? "true" : "false"}
-          className={`task-name-strike min-w-0 flex-1 leading-snug ${compact ? "text-[0.8571rem]" : "text-[0.9286rem] font-medium"} ${
+          className={`task-name-strike min-w-0 flex-1 text-[0.9286rem] font-medium leading-snug ${
             task.done ? "ui-text-tertiary" : "ui-text-primary"
           }`}
         >
           {task.name}
         </motion.p>
-        {!compact && (
-          <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={() => onEdit(task)}
-              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
-              style={{ color: "var(--color-brand)" }}
-            >
-              编辑
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(task.id)}
-              className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
-              style={{ color: "var(--color-danger)" }}
-            >
-              删除
-            </button>
-          </div>
+        <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            onClick={() => onEdit(task)}
+            className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
+            style={{ color: "var(--color-brand)" }}
+          >
+            编辑
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(task.id)}
+            className="no-drag rounded-[var(--radius-button)] px-2 py-1 text-[0.7857rem] transition"
+            style={{ color: "var(--color-danger)" }}
+          >
+            删除
+          </button>
+        </div>
+      </div>
+      <div
+        className="mt-1 ml-5.5 flex flex-wrap items-center gap-1.5 text-[0.7857rem]"
+        style={{ color: "var(--color-text-secondary)" }}
+      >
+        <span
+          className="rounded-[0.4286rem] px-1.5 py-0.5"
+          style={{
+            background: "var(--color-surface-muted)",
+            color: "var(--color-text-secondary)",
+          }}
+        >
+          {tagLabels[task.tag]}
+        </span>
+        {task.due ? (
+          <span className="tabular-nums">截止 {formatDisplayDate(task.due)}</span>
+        ) : (
+          <span style={{ color: "var(--color-text-tertiary)" }}>无截止日</span>
         )}
       </div>
-      {!compact && (
-        <div
-          className="mt-1 ml-5.5 flex flex-wrap items-center gap-1.5 text-[0.7857rem]"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          <span
-            className="rounded-[0.4286rem] px-1.5 py-0.5"
-            style={{
-              background: "var(--color-surface-muted)",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            {tagLabels[task.tag]}
-          </span>
-          {task.due ? (
-            <span className="tabular-nums">截止 {formatDisplayDate(task.due)}</span>
-          ) : (
-            <span style={{ color: "var(--color-text-tertiary)" }}>无截止日</span>
-          )}
-        </div>
-      )}
     </motion.div>
   );
 }

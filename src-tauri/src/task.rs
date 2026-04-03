@@ -157,7 +157,8 @@ fn apply_startup_task_fixes(tasks: &mut Vec<Task>, path: &Path) -> Result<(), St
             t.created_date = Some(due_first_ymd(&t.due).unwrap_or_else(|| today.clone()));
             changed = true;
         }
-        // 仅当明确设置了截止日期且已过期时，将未完成任务的 due 滚到今日（不将「无截止日」改为今日）
+        // 仅当明确设置了截止日期且已过期时，将未完成任务的 due 滚到今日。
+        // `due` 为 None 时保持不变，不强制赋今天（无截止日任务不滚动）。
         if !t.done {
             if let Some(due_ymd) = due_first_ymd(&t.due) {
                 if due_ymd < today {
