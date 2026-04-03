@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import type { Task } from "../stores/useTaskStore";
 import { formatDisplayDate, tagLabels } from "../lib/taskUtils";
@@ -26,30 +26,52 @@ export function TaskCard({
       layout={!dragHandle}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}
+      whileHover={{
+        y: -1,
+        boxShadow: "var(--shadow-card-hover)",
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={`ui-card group relative transition-colors ${compact ? "px-2 py-1" : "px-2.5 py-2"}`}
     >
       <div className="flex items-center gap-2">
         {dragHandle ? (
           <span className="no-drag flex shrink-0">{dragHandle}</span>
         ) : null}
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={() => onToggle(task.id)}
-          className="ui-checkbox-task no-drag size-3.5 shrink-0 cursor-pointer rounded border"
-          style={{
-            borderColor: "var(--color-border)",
-            background: "var(--color-surface)",
-          }}
-          aria-label={task.done ? "标记未完成" : "标记完成"}
-        />
-        <p
-          className={`min-w-0 flex-1 leading-snug ${compact ? "text-[0.8571rem]" : "text-[0.9286rem] font-medium"} ${
-            task.done ? "ui-text-tertiary line-through" : "ui-text-primary"
+        <span className="relative flex size-3.5 shrink-0 items-center justify-center">
+          <AnimatePresence>
+            {task.done ? (
+              <motion.span
+                key="ripple"
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ background: "var(--color-done)" }}
+                initial={{ scale: 0.8, opacity: 0.5 }}
+                animate={{ scale: 2.2, opacity: 0 }}
+                exit={{}}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              />
+            ) : null}
+          </AnimatePresence>
+          <input
+            type="checkbox"
+            checked={task.done}
+            onChange={() => onToggle(task.id)}
+            className="ui-checkbox-task no-drag relative z-10 size-3.5 shrink-0 cursor-pointer rounded border"
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+            }}
+            aria-label={task.done ? "标记未完成" : "标记完成"}
+          />
+        </span>
+        <motion.p
+          data-done={task.done ? "true" : "false"}
+          className={`task-name-strike min-w-0 flex-1 leading-snug ${compact ? "text-[0.8571rem]" : "text-[0.9286rem] font-medium"} ${
+            task.done ? "ui-text-tertiary" : "ui-text-primary"
           }`}
         >
           {task.name}
-        </p>
+        </motion.p>
         {!compact && (
           <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
             <button

@@ -1,6 +1,8 @@
 import {
   DndContext,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   closestCorners,
@@ -26,6 +28,7 @@ import {
   PRIORITY_ORDER,
 } from "../lib/taskUtils";
 import { StatsBar } from "./StatsBar";
+import { TaskCard } from "./TaskCard";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskSection } from "./TaskSection";
 
@@ -37,6 +40,13 @@ import { TaskSection } from "./TaskSection";
 const FULL_HEIGHT = 600;
 /** 精简模式：同上，需与折叠后可见内容高度协调 */
 const COMPACT_HEIGHT = 240;
+
+function overlayShadow(): string {
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return isDark
+    ? "0 12px 32px rgba(0,0,0,0.35)"
+    : "0 12px 32px rgba(0,0,0,0.15)";
+}
 
 export function TaskBoard() {
   const {
@@ -56,10 +66,11 @@ export function TaskBoard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [createPriority, setCreatePriority] = useState<Priority | null>(null);
   const [compact, setCompact] = useState(false);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      activationConstraint: { distance: 3 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -121,53 +132,62 @@ export function TaskBoard() {
     return (a.order ?? 0) - (b.order ?? 0) || a.id - b.id;
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    const task = tasks.find((t) => t.id === Number(event.active.id));
+    setActiveTask(task ?? null);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = Number(active.id);
-    const activeTask = tasks.find((t) => t.id === activeId);
-    if (!activeTask) return;
+    try {
+      const { active, over } = event;
+      if (!over) return;
+      const activeId = Number(active.id);
+      const dragged = tasks.find((t) => t.id === activeId);
+      if (!dragged) return;
 
-    const overRaw = over.id;
-    if (activeId === Number(overRaw)) return;
+      const overRaw = over.id;
+      if (activeId === Number(overRaw)) return;
 
-    const from = activeTask.priority;
+      const from = dragged.priority;
 
-    if (String(overRaw).startsWith("column-")) {
-      const to = String(overRaw).replace("column-", "") as Priority;
+      if (String(overRaw).startsWith("column-")) {
+        const to = String(overRaw).replace("column-", "") as Priority;
+        const destSorted = tasks
+          .filter((t) => t.priority === to && t.id !== activeId)
+          .sort(sortByOrder);
+        const newIds = [...destSorted.map((t) => t.id), activeId];
+        void moveTaskBetweenPriorities(activeId, to, newIds);
+        return;
+      }
+
+      const overTask = tasks.find((t) => t.id === Number(overRaw));
+      if (!overTask) return;
+      const to = overTask.priority;
+
+      if (from === to) {
+        const ids = filterTasksByPriority(tasks, from).map((t) => t.id);
+        const oldIndex = ids.indexOf(activeId);
+        const newIndex = ids.indexOf(Number(overRaw));
+        if (oldIndex < 0 || newIndex < 0) return;
+        const newIds = arrayMove(ids, oldIndex, newIndex);
+        void reorderTasksInPriority(from, newIds);
+        return;
+      }
+
       const destSorted = tasks
         .filter((t) => t.priority === to && t.id !== activeId)
         .sort(sortByOrder);
-      const newIds = [...destSorted.map((t) => t.id), activeId];
+      const overIdx = destSorted.findIndex((t) => t.id === overTask.id);
+      if (overIdx < 0) return;
+      const newIds = [
+        ...destSorted.slice(0, overIdx).map((t) => t.id),
+        activeId,
+        ...destSorted.slice(overIdx).map((t) => t.id),
+      ];
       void moveTaskBetweenPriorities(activeId, to, newIds);
-      return;
+    } finally {
+      setActiveTask(null);
     }
-
-    const overTask = tasks.find((t) => t.id === Number(overRaw));
-    if (!overTask) return;
-    const to = overTask.priority;
-
-    if (from === to) {
-      const ids = filterTasksByPriority(tasks, from).map((t) => t.id);
-      const oldIndex = ids.indexOf(activeId);
-      const newIndex = ids.indexOf(Number(overRaw));
-      if (oldIndex < 0 || newIndex < 0) return;
-      const newIds = arrayMove(ids, oldIndex, newIndex);
-      void reorderTasksInPriority(from, newIds);
-      return;
-    }
-
-    const destSorted = tasks
-      .filter((t) => t.priority === to && t.id !== activeId)
-      .sort(sortByOrder);
-    const overIdx = destSorted.findIndex((t) => t.id === overTask.id);
-    if (overIdx < 0) return;
-    const newIds = [
-      ...destSorted.slice(0, overIdx).map((t) => t.id),
-      activeId,
-      ...destSorted.slice(overIdx).map((t) => t.id),
-    ];
-    void moveTaskBetweenPriorities(activeId, to, newIds);
   }
 
   return (
@@ -224,9 +244,15 @@ export function TaskBoard() {
         </button>
       </header>
 
-      <div
-        className="no-drag ui-panel-muted min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3"
-        style={{ display: compact ? "none" : undefined }}
+      <motion.div
+        className="no-drag ui-panel-muted min-h-0 flex-1 overflow-x-hidden px-3 py-3"
+        style={{ overflowY: compact ? "hidden" : "auto" }}
+        initial={false}
+        animate={{
+          opacity: compact ? 0 : 1,
+          height: compact ? 0 : "auto",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {error ? (
           <p
@@ -245,13 +271,18 @@ export function TaskBoard() {
           <p className="ui-text-tertiary py-8 text-center text-[0.8571rem]">
             加载中…
           </p>
-        ) : !compact ? (
+        ) : (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveTask(null)}
           >
-            <div className="space-y-5 pb-1">
+            <div
+              className="space-y-5 pb-1"
+              style={{ display: compact ? "none" : undefined }}
+            >
               {PRIORITY_ORDER.map((p) => (
                 <TaskSection
                   key={p}
@@ -268,27 +299,36 @@ export function TaskBoard() {
                 />
               ))}
             </div>
+
+            <DragOverlay
+              dropAnimation={{
+                duration: 180,
+                easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+              }}
+            >
+              {activeTask ? (
+                <div
+                  className="pointer-events-none"
+                  style={{
+                    transform: "rotate(1.5deg) scale(1.02)",
+                    boxShadow: overlayShadow(),
+                    borderRadius: "var(--radius-card)",
+                    opacity: 0.98,
+                  }}
+                >
+                  <TaskCard
+                    task={activeTask}
+                    onToggle={() => {}}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                    compact={false}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
-        ) : (
-          <div className="space-y-5 pb-1">
-            {PRIORITY_ORDER.map((p) => (
-              <TaskSection
-                key={p}
-                priority={p}
-                tasks={filterTasksByPriority(tasks, p)}
-                onToggle={(id) => void toggleTask(id)}
-                onEdit={openEdit}
-                onDelete={(id) => void deleteTask(id)}
-                onAddInSection={() => openCreate(p)}
-                onReorder={(orderedIds) =>
-                  void reorderTasksInPriority(p, orderedIds)
-                }
-                compact
-              />
-            ))}
-          </div>
         )}
-      </div>
+      </motion.div>
 
       {!compact && <StatsBar tasks={tasks} />}
 

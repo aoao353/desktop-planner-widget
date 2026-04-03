@@ -5,7 +5,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Priority, Task } from "../stores/useTaskStore";
 import { priorityLabels } from "../lib/taskUtils";
 import { TaskCard } from "./TaskCard";
@@ -15,6 +15,15 @@ const dotClass: Record<Priority, string> = {
   high: "ui-dot ui-dot--high",
   normal: "ui-dot ui-dot--normal",
   low: "ui-dot ui-dot--low",
+};
+
+const liExit = { opacity: 0, x: -16, transition: { duration: 0.2 } };
+
+const emptyMotionProps = {
+  initial: { opacity: 0, scale: 0.97 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.97 },
+  transition: { duration: 0.2 },
 };
 
 export function columnDroppableId(priority: Priority): string {
@@ -53,43 +62,66 @@ function SortableTaskRow({
     isDragging,
   } = useSortable({ id: task.id });
 
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const dragShadow = isDark
+    ? "0 8px 24px rgba(0,0,0,0.35)"
+    : "0 8px 24px rgba(0,0,0,0.12)";
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 2 : undefined,
+    transform: CSS.Transform.toString(
+      transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
+    ),
+    transition: isDragging ? "none" : transition,
+    zIndex: isDragging ? 10 : undefined,
+    boxShadow: isDragging ? dragShadow : undefined,
   };
 
   return (
-    <li
+    <motion.li
       ref={setNodeRef}
+      layout
       style={style}
-      className={isDragging ? "opacity-70" : undefined}
+      exit={liExit}
+      className={[
+        isDragging ? "opacity-95" : "",
+        "rounded-[var(--radius-card)] transition-shadow duration-200",
+        isDragging ? "ring-1 ring-[var(--color-border-strong)]" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      <TaskCard
-        task={task}
-        onToggle={onToggle}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        compact={false}
-        dragHandle={
-          <button
-            type="button"
-            className="no-drag flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-[var(--radius-button)] active:cursor-grabbing"
-            style={{ color: "var(--color-text-tertiary)" }}
-            {...listeners}
-            {...attributes}
-            aria-label="拖动排序"
-            title="拖动排序"
-          >
-            <span className="select-none text-[0.9286rem] leading-none tracking-tighter">
-              ⋮
-              <br />
-              ⋮
-            </span>
-          </button>
-        }
-      />
-    </li>
+      <div
+        className={isDragging ? "pointer-events-none opacity-0" : undefined}
+        style={{
+          transition: isDragging ? undefined : "opacity 0.15s ease-out",
+        }}
+      >
+        <TaskCard
+          task={task}
+          onToggle={onToggle}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          compact={false}
+          dragHandle={
+            <button
+              type="button"
+              className="no-drag flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-[var(--radius-button)] active:cursor-grabbing"
+              style={{ color: "var(--color-text-tertiary)" }}
+              {...listeners}
+              {...attributes}
+              aria-label="拖动排序"
+              title="拖动排序"
+            >
+              <span className="select-none text-[0.9286rem] leading-none tracking-tighter">
+                ⋮
+                <br />
+                ⋮
+              </span>
+            </button>
+          }
+        />
+      </div>
+    </motion.li>
   );
 }
 
@@ -112,17 +144,19 @@ function TaskSectionCompact({
       animate={{ opacity: 1 }}
     >
       <ul className="space-y-0.5">
-        {tasks.map((t) => (
-          <li key={t.id}>
-            <TaskCard
-              task={t}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              compact
-            />
-          </li>
-        ))}
+        <AnimatePresence mode="popLayout" initial={false}>
+          {tasks.map((t) => (
+            <motion.li key={t.id} layout exit={liExit}>
+              <TaskCard
+                task={t}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                compact
+              />
+            </motion.li>
+          ))}
+        </AnimatePresence>
       </ul>
     </motion.section>
   );
@@ -151,47 +185,52 @@ function TaskSectionFull({
         items={sortableIds}
         strategy={verticalListSortingStrategy}
       >
-        <ul className="space-y-1.5">
-          {tasks.map((t) => (
-            <SortableTaskRow
-              key={t.id}
-              task={t}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          ))}
+        <ul className="relative space-y-1.5">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {tasks.map((t) => (
+              <SortableTaskRow
+                key={t.id}
+                task={t}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </AnimatePresence>
         </ul>
       </SortableContext>
     ) : (
       <ul className="space-y-1.5">
-        {tasks.map((t) => (
-          <li key={t.id}>
-            <TaskCard
-              task={t}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              compact={false}
-            />
-          </li>
-        ))}
+        <AnimatePresence mode="popLayout" initial={false}>
+          {tasks.map((t) => (
+            <motion.li key={t.id} layout exit={liExit}>
+              <TaskCard
+                task={t}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                compact={false}
+              />
+            </motion.li>
+          ))}
+        </AnimatePresence>
       </ul>
     );
 
   const emptyDroppable =
     onReorder && tasks.length === 0 ? (
       <SortableContext items={[]} strategy={verticalListSortingStrategy}>
-        <p
+        <motion.p
           className="min-h-[3.7143rem] rounded-[var(--radius-card)] border border-dashed px-3 py-4 text-center text-[0.7857rem]"
           style={{
             borderColor: isOver ? "var(--color-brand)" : "var(--color-border)",
             background: "var(--color-surface-muted)",
             color: "var(--color-text-tertiary)",
           }}
+          {...emptyMotionProps}
         >
           拖入任务到此优先级
-        </p>
+        </motion.p>
       </SortableContext>
     ) : null;
 
@@ -199,13 +238,17 @@ function TaskSectionFull({
     <motion.section
       layout
       ref={setNodeRef}
-      className={`space-y-2 rounded-[var(--radius-card)] ${onReorder ? "outline -outline-offset-1 transition-[outline-color] " : ""}`}
+      className={`space-y-2 rounded-[var(--radius-card)] ${onReorder ? "outline -outline-offset-1 " : ""}`}
       style={
         onReorder
           ? {
               outlineColor: isOver
                 ? "color-mix(in srgb, var(--color-brand) 45%, transparent)"
                 : "transparent",
+              background: isOver
+                ? "color-mix(in srgb, var(--color-brand) 4%, transparent)"
+                : "transparent",
+              transition: "background 0.2s ease, outline-color 0.2s ease",
             }
           : undefined
       }
@@ -239,16 +282,17 @@ function TaskSectionFull({
       </div>
       {tasks.length === 0 ? (
         emptyDroppable ?? (
-          <p
+          <motion.p
             className="rounded-[var(--radius-card)] border border-dashed px-3 py-4 text-center text-[0.7857rem]"
             style={{
               borderColor: "var(--color-border)",
               background: "var(--color-surface-muted)",
               color: "var(--color-text-tertiary)",
             }}
+            {...emptyMotionProps}
           >
             暂无任务
-          </p>
+          </motion.p>
         )
       ) : (
         listContent

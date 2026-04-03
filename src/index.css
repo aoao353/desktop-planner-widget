@@ -27,6 +27,7 @@
 
   /* Shadows */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.04);
 
   /* Priority (semantic, warm) */
@@ -71,6 +72,7 @@
     --color-border-strong: rgba(245, 244, 239, 0.16);
 
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.2);
 
     --color-progress-track: rgba(245, 244, 239, 0.12);
@@ -248,4 +250,28 @@ body,
 
 .ui-text-tertiary {
   color: var(--color-text-tertiary);
+}
+
+/* Task name: animated strikethrough when done (left → right) */
+.task-name-strike {
+  position: relative;
+}
+
+.task-name-strike[data-done="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  animation: task-strikethrough 0.3s ease forwards;
+}
+
+@keyframes task-strikethrough {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
 }

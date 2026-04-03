@@ -49,3 +49,26 @@ export function formatHistoryDateLabel(isoDate: string): string {
     day: "numeric",
   });
 }
+
+/** 按日期索引的任务 Map，用于热力图点击详情 */
+export function buildDayTaskMap(tasks: Task[]): Map<string, Task[]> {
+  const map = new Map<string, Task[]>();
+  for (const t of tasks) {
+    const key = (t.due ?? t.createdDate ?? "").slice(0, 10);
+    if (!key) continue;
+    const existing = map.get(key);
+    if (existing) existing.push(t);
+    else map.set(key, [t]);
+  }
+  return map;
+}
+
+/** 给定完成率（0–1）返回热力图色阶索引 0–4 */
+export function rateToLevel(
+  completedCount: number,
+  totalCount: number,
+): 0 | 1 | 2 | 3 | 4 {
+  if (totalCount === 0) return 0;
+  const r = Math.min(1, completedCount / totalCount);
+  return (Math.round(r * 3) + 1) as 0 | 1 | 2 | 3 | 4;
+}
