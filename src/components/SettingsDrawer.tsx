@@ -94,6 +94,18 @@ export function SettingsDrawer({ open, onClose, onSaved }: Props) {
 
   }
 
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setRootFontSizePx(baselineFontRef.current);
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [open, onClose]);
+
 
 
   async function handleSubmit(e: FormEvent) {

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { Task } from "../stores/useTaskStore";
 import {
   buildDayHistory,
@@ -14,6 +14,15 @@ type Props = {
 
 export function HistoryDrawer({ open, tasks, onClose }: Props) {
   const rows = useMemo(() => buildDayHistory(tasks), [tasks]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [open, onClose]);
 
   const panelStyle = {
     background: "var(--color-surface-elevated)",

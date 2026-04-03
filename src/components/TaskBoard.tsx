@@ -29,8 +29,13 @@ import { StatsBar } from "./StatsBar";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskSection } from "./TaskSection";
 
+/**
+ * 窗口逻辑高度（`LogicalSize`，与 `setSize` 一致）。
+ * 须与顶栏、内边距、正文区布局大致匹配；根字号见 `src/index.css` 的 `html { font-size }`
+ *（运行时可被设置中的字号覆盖）。若改布局或全局字号，请同步调整，避免裁切或过多留白。
+ */
 const FULL_HEIGHT = 600;
-/** 折叠后仍保留顶栏与留白，避免窗口过矮只剩一行 */
+/** 精简模式：同上，需与折叠后可见内容高度协调 */
 const COMPACT_HEIGHT = 240;
 
 export function TaskBoard() {
@@ -240,7 +245,7 @@ export function TaskBoard() {
           <p className="ui-text-tertiary py-8 text-center text-[0.8571rem]">
             加载中…
           </p>
-        ) : (
+        ) : !compact ? (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -259,11 +264,29 @@ export function TaskBoard() {
                   onReorder={(orderedIds) =>
                     void reorderTasksInPriority(p, orderedIds)
                   }
-                  compact={compact}
+                  compact={false}
                 />
               ))}
             </div>
           </DndContext>
+        ) : (
+          <div className="space-y-5 pb-1">
+            {PRIORITY_ORDER.map((p) => (
+              <TaskSection
+                key={p}
+                priority={p}
+                tasks={filterTasksByPriority(tasks, p)}
+                onToggle={(id) => void toggleTask(id)}
+                onEdit={openEdit}
+                onDelete={(id) => void deleteTask(id)}
+                onAddInSection={() => openCreate(p)}
+                onReorder={(orderedIds) =>
+                  void reorderTasksInPriority(p, orderedIds)
+                }
+                compact
+              />
+            ))}
+          </div>
         )}
       </div>
 

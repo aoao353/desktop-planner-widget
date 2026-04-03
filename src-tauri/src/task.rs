@@ -148,7 +148,7 @@ fn write_tasks(path: &Path, tasks: &mut [Task]) -> Result<(), String> {
     Ok(())
 }
 
-/// 补全 `created_date`、未完成任务跨日将 `due` 滚到今日，并写回磁盘（若有变更）。
+/// 补全 `created_date`；未完成且已有过期 `due` 时滚到今日，并写回磁盘（若有变更）。
 fn apply_startup_task_fixes(tasks: &mut Vec<Task>, path: &Path) -> Result<(), String> {
     let today = local_ymd();
     let mut changed = false;
@@ -157,18 +157,12 @@ fn apply_startup_task_fixes(tasks: &mut Vec<Task>, path: &Path) -> Result<(), St
             t.created_date = Some(due_first_ymd(&t.due).unwrap_or_else(|| today.clone()));
             changed = true;
         }
-        // 过期未完成：创建日早于今日且无未来截止日期时，将 due 滚到今日以便出现在当日列表
+        // 仅当明确设置了截止日期且已过期时，将未完成任务的 due 滚到今日（不将「无截止日」改为今日）
         if !t.done {
-            if let Some(ref cd) = t.created_date {
-                if cd < &today {
-                    let bump = match due_first_ymd(&t.due) {
-                        None => true,
-                        Some(d) => d < today,
-                    };
-                    if bump {
-                        t.due = Some(today.clone());
-                        changed = true;
-                    }
+            if let Some(due_ymd) = due_first_ymd(&t.due) {
+                if due_ymd < today {
+                    t.due = Some(today.clone());
+                    changed = true;
                 }
             }
         }

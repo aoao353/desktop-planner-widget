@@ -38,13 +38,11 @@ function SortableTaskRow({
   onToggle,
   onEdit,
   onDelete,
-  compact,
 }: {
   task: Task;
   onToggle: (id: number) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
-  compact: boolean;
 }) {
   const {
     attributes,
@@ -72,7 +70,7 @@ function SortableTaskRow({
         onToggle={onToggle}
         onEdit={onEdit}
         onDelete={onDelete}
-        compact={compact}
+        compact={false}
         dragHandle={
           <button
             type="button"
@@ -95,7 +93,43 @@ function SortableTaskRow({
   );
 }
 
-export function TaskSection({
+/** 精简模式：无 DndContext，故不使用 useDroppable / useSortable */
+function TaskSectionCompact({
+  tasks,
+  onToggle,
+  onEdit,
+  onDelete,
+}: Pick<
+  Props,
+  "tasks" | "onToggle" | "onEdit" | "onDelete"
+>) {
+  if (tasks.length === 0) return null;
+  return (
+    <motion.section
+      layout
+      className="space-y-2 rounded-[var(--radius-card)]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <ul className="space-y-0.5">
+        {tasks.map((t) => (
+          <li key={t.id}>
+            <TaskCard
+              task={t}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              compact
+            />
+          </li>
+        ))}
+      </ul>
+    </motion.section>
+  );
+}
+
+/** 完整视图：须在 TaskBoard 的 DndContext 内渲染 */
+function TaskSectionFull({
   priority,
   tasks,
   onToggle,
@@ -103,19 +137,16 @@ export function TaskSection({
   onDelete,
   onAddInSection,
   onReorder,
-  compact = false,
-}: Props) {
+}: Omit<Props, "compact">) {
   const droppableId = columnDroppableId(priority);
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId,
   });
 
-  if (compact && tasks.length === 0) return null;
-
   const sortableIds = tasks.map((t) => t.id);
 
   const listContent =
-    !compact && onReorder && tasks.length > 0 ? (
+    onReorder && tasks.length > 0 ? (
       <SortableContext
         items={sortableIds}
         strategy={verticalListSortingStrategy}
@@ -128,13 +159,12 @@ export function TaskSection({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
-              compact={false}
             />
           ))}
         </ul>
       </SortableContext>
     ) : (
-      <ul className={compact ? "space-y-0.5" : "space-y-1.5"}>
+      <ul className="space-y-1.5">
         {tasks.map((t) => (
           <li key={t.id}>
             <TaskCard
@@ -142,7 +172,7 @@ export function TaskSection({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
-              compact={compact}
+              compact={false}
             />
           </li>
         ))}
@@ -150,7 +180,7 @@ export function TaskSection({
     );
 
   const emptyDroppable =
-    !compact && onReorder && tasks.length === 0 ? (
+    onReorder && tasks.length === 0 ? (
       <SortableContext items={[]} strategy={verticalListSortingStrategy}>
         <p
           className="min-h-[3.7143rem] rounded-[var(--radius-card)] border border-dashed px-3 py-4 text-center text-[0.7857rem]"
@@ -169,9 +199,9 @@ export function TaskSection({
     <motion.section
       layout
       ref={setNodeRef}
-      className={`space-y-2 rounded-[var(--radius-card)] ${!compact && onReorder ? "outline -outline-offset-1 transition-[outline-color] " : ""}`}
+      className={`space-y-2 rounded-[var(--radius-card)] ${onReorder ? "outline -outline-offset-1 transition-[outline-color] " : ""}`}
       style={
-        !compact && onReorder
+        onReorder
           ? {
               outlineColor: isOver
                 ? "color-mix(in srgb, var(--color-brand) 45%, transparent)"
@@ -182,34 +212,32 @@ export function TaskSection({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      {!compact && (
-        <div className="flex items-center gap-2 px-0.5">
-          <span className={dotClass[priority]} aria-hidden />
-          <h3 className="ui-text-primary min-w-0 flex-1 text-[0.8571rem] font-semibold tracking-wide">
-            {priorityLabels[priority]}
-          </h3>
-          <span className="ui-text-tertiary shrink-0 text-[0.7857rem]">
-            ({tasks.length})
-          </span>
-          {onAddInSection ? (
-            <button
-              type="button"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddInSection();
-              }}
-              className="no-drag flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-button)] text-[1.0714rem] font-light leading-none transition"
-              style={{ color: "var(--color-brand)" }}
-              aria-label={`在${priorityLabels[priority]}下新建任务`}
-              title="在此优先级下新建"
-            >
-              +
-            </button>
-          ) : null}
-        </div>
-      )}
-      {tasks.length === 0 && !compact ? (
+      <div className="flex items-center gap-2 px-0.5">
+        <span className={dotClass[priority]} aria-hidden />
+        <h3 className="ui-text-primary min-w-0 flex-1 text-[0.8571rem] font-semibold tracking-wide">
+          {priorityLabels[priority]}
+        </h3>
+        <span className="ui-text-tertiary shrink-0 text-[0.7857rem]">
+          ({tasks.length})
+        </span>
+        {onAddInSection ? (
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddInSection();
+            }}
+            className="no-drag flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-button)] text-[1.0714rem] font-light leading-none transition"
+            style={{ color: "var(--color-brand)" }}
+            aria-label={`在${priorityLabels[priority]}下新建任务`}
+            title="在此优先级下新建"
+          >
+            +
+          </button>
+        ) : null}
+      </div>
+      {tasks.length === 0 ? (
         emptyDroppable ?? (
           <p
             className="rounded-[var(--radius-card)] border border-dashed px-3 py-4 text-center text-[0.7857rem]"
@@ -227,4 +255,19 @@ export function TaskSection({
       )}
     </motion.section>
   );
+}
+
+export function TaskSection(props: Props) {
+  const { compact, ...rest } = props;
+  if (compact) {
+    return (
+      <TaskSectionCompact
+        tasks={rest.tasks}
+        onToggle={rest.onToggle}
+        onEdit={rest.onEdit}
+        onDelete={rest.onDelete}
+      />
+    );
+  }
+  return <TaskSectionFull {...rest} />;
 }

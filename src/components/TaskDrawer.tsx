@@ -57,6 +57,15 @@ export function TaskDrawer({
     }
   }, [open, mode, task, initialPriority]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [open, onClose]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim() || saving) return;

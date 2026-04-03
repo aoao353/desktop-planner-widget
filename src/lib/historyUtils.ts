@@ -31,7 +31,11 @@ export function buildDayHistory(tasks: Task[]): DayHistoryRow[] {
       return cr === date;
     }).length;
     const rate =
-      totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+      totalCount === 0
+        ? completedCount > 0
+          ? 100
+          : 0
+        : Math.min(100, Math.round((completedCount / totalCount) * 100));
     return { date, completedCount, totalCount, rate };
   });
 }

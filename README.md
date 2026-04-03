@@ -20,6 +20,8 @@
 
 > **发布前**：请把 `src-tauri/tauri.conf.json` 里的 `identifier`（当前为 `com.lenovo.task-widget`）改成你自己的反向域名标识，避免与上游冲突。
 
+> **窗口高度**：`src/components/TaskBoard.tsx` 中的 `FULL_HEIGHT` / `COMPACT_HEIGHT` 与精简模式下的 `setSize` 绑定；若调整 `src/index.css` 根字号或顶栏、主内容区布局，请同步修改这两个常量，避免出现裁切或多余空白。
+
 ---
 
 ## 截图
